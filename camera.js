@@ -1,4 +1,4 @@
-import { norm, cross, negate, dot, scale } from "./linear_algebra.js";
+import { norm, cross, negate, dot, scale, get_rotation_matrix, matvecmul} from "./linear_algebra.js";
 
 
 export class Camera {
@@ -46,12 +46,10 @@ export class Camera {
         this.x_angle += x_angle;
         this.y_angle += y_angle;
 
-        let yc = Math.cos(this.y_angle);
-        let ys = Math.sin(this.y_angle);
-        let xc = Math.cos(this.x_angle);
-        let xs = Math.sin(this.x_angle);
-
-        this.view_dir = [ys * xc, xs, -xc * yc];
+        let r = get_rotation_matrix(this.x_angle, this.y_angle, 0);
+        let view_dir = matvecmul(r, [0, 0, -1, 0]);
+        view_dir.pop();
+        this.view_dir = view_dir;
     }
 
     move_forward(dist) {

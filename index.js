@@ -104,7 +104,7 @@ function onmousemove(event) {
         if (MOUSE_DOWN) {
             CAMERA.rotate(
                 -diff_y * ROTATE_SENS / 1000,
-                -diff_x * ROTATE_SENS / 1000
+                diff_x * ROTATE_SENS / 1000
             );
         } else if (WHEEL_DOWN) {
             CAMERA.move_side(
