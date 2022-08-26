@@ -1,14 +1,12 @@
 import { Camera } from "./camera.js";
 import { compile_program, get_axis_vao, get_cube_vao, draw_lines, draw_triangles } from "./gl.js";
-import { get_model, get_view, get_perspective_projection } from "./linear_algebra.js";
+import { get_model, get_perspective_projection } from "./linear_algebra.js";
 
 /** @type {HTMLCanvasElement} */
 const SCENE_CANVAS = document.getElementById("scene");
 /** @type {WebGLRenderingContext} */
 const GL = SCENE_CANVAS.getContext("webgl2");
 
-var VIEW_ROTATION = { x: 0, y: 0, z: 0 };
-var VIEW_POSITION = { x: 0, y: 0, z: 0 }
 var MOUSE_DOWN = false;
 var WHEEL_DOWN = false;
 var MOUSE_POSITION = { x: null, y: null };
@@ -72,7 +70,7 @@ function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
     let scale = { x: 1.0, y: 1.0, z: 1.0 };
     let translation = { x: 0.0, y: 0.0, z: -5 };
 
-    let view = get_view(VIEW_POSITION, VIEW_ROTATION);
+    let view = CAMERA.get_view();
     let projection = get_perspective_projection(fov, znear, zfar, aspect_ratio);
 
     let cube_rotation = { x: 0.0, y: 0.0, z: 0.0 };
@@ -101,11 +99,9 @@ function onmousemove(event) {
         let diff_x = event.x - MOUSE_POSITION.x;
         let diff_y = MOUSE_POSITION.y - event.y;
         if (MOUSE_DOWN) {
-            VIEW_ROTATION.x -= diff_y / 800;
-            VIEW_ROTATION.y += diff_x / 800;
+            CAMERA.rotate(-diff_y / 1000, -diff_x / 1000);
         } else if (WHEEL_DOWN) {
-            VIEW_POSITION.x -= diff_x / 800;
-            VIEW_POSITION.y -= diff_y / 800;
+            CAMERA.move_side(-diff_x / 300, -diff_y / 300);
         }
     }
 
@@ -126,9 +122,14 @@ function onmouseup() {
     MOUSE_DOWN = false;
 }
 
+function onwheel(event) {
+    CAMERA.move_forward(event.deltaY / 300);
+}
+
 SCENE_CANVAS.onmousemove = onmousemove;
 SCENE_CANVAS.onmousedown = onmousedown;
 SCENE_CANVAS.onmouseup = onmouseup;
 SCENE_CANVAS.onmouseleave = onmouseup;
+SCENE_CANVAS.onwheel = onwheel;
 
 window.onload = main;
