@@ -1,14 +1,38 @@
+import { Camera } from "./camera.js";
+import { compile_program, get_axis_vao, get_cube_vao, draw_lines, draw_triangles } from "./gl.js";
+import { get_model, get_view, get_perspective_projection } from "./linear_algebra.js";
+
+/** @type {HTMLCanvasElement} */
 const SCENE_CANVAS = document.getElementById("scene");
+/** @type {WebGLRenderingContext} */
 const GL = SCENE_CANVAS.getContext("webgl2");
 
-const VERT_SHADER_SRC  = `#version 300 es
+var VIEW_ROTATION = { x: 0, y: 0, z: 0 };
+var VIEW_POSITION = { x: 0, y: 0, z: 0 }
+var MOUSE_DOWN = false;
+var WHEEL_DOWN = false;
+var MOUSE_POSITION = { x: null, y: null };
+var CAMERA = new Camera();
+
+const VERT_SHADER_SRC = `#version 300 es
     // #pragma vscode_glsllint_stage : vert
     precision mediump float;
 
-    in vec2 a_position;
+    in vec3 a_position;
+    in vec3 a_color;
+
+    uniform mat4 u_model;
+    uniform mat4 u_view;
+    uniform mat4 u_projection;
+
+    out vec3 v_color;
 
     void main(void) {
-        gl_Position = vec4(a_position, 0.0, 1.0);
+        vec4 pos = vec4(a_position, 1.0);
+        pos = u_projection * u_view * u_model * pos;
+
+        gl_Position = pos;
+        v_color = a_color;
     }
 `
 
@@ -16,99 +40,95 @@ const FRAG_SHADER_SRC = `#version 300 es
     // #pragma vscode_glsllint_stage : vert
     precision mediump float;
 
+    in vec3 v_color;
+
     out vec4 f_color;
 
     void main(void) {
-        f_color = vec4(0.0, 1.0, 0.0, 1.0);
+        f_color = vec4(v_color, 1.0);
     }
 `
 
 
 async function main() {
-    const model = {
-        vertex_positions: new Float32Array([-1, 1, 1, 1, 1, -1, -1, -1]),
-        vertex_colors: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0]),
-        vertex_indices: new Uint16Array([0, 1, 2, 0, 2, 3]),
-    };
-    const program = compile_program(VERT_SHADER_SRC, FRAG_SHADER_SRC);
-    const vertex_positions_loc = GL.getAttribLocation(program, "a_position");
-
-    const vao = GL.createVertexArray();
-    const ebo = GL.createBuffer();
-
-    GL.bindVertexArray(vao);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, GL.createBuffer());
-    GL.bufferData(GL.ARRAY_BUFFER, model.vertex_positions, GL.STATIC_DRAW);
-    GL.vertexAttribPointer(vertex_positions_loc, 2, GL.FLOAT, false, 8, 0);
-    GL.enableVertexAttribArray(vertex_positions_loc);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, ebo);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, model.vertex_indices, GL.STATIC_DRAW);
+    const program = compile_program(GL, VERT_SHADER_SRC, FRAG_SHADER_SRC);
+    const global_axis_vao = get_axis_vao(GL, program, [0.9, 0.1, 0.1], [0.1, 0.9, 0.1], [0.1, 0.1, 0.9]);
+    const cube_axis_vao = get_axis_vao(GL, program, [0.7, 0.07, 0.07], [0.07, 0.7, 0.07], [0.07, 0.07, 0.7]);
+    const cube_vao = get_cube_vao(GL, program);
 
     GL.enable(GL.DEPTH_TEST);
     GL.depthFunc(GL.LEQUAL);
+    GL.lineWidth(3);
 
-    requestAnimationFrame(() => draw(
-        program,
-        vao,
-        ebo,
-        vertex_positions_loc,
-    ));
+    requestAnimationFrame(() => draw(program, global_axis_vao, cube_axis_vao, cube_vao));
 }
 
-function draw(
-    program,
-    vao,
-    ebo,
-    vertex_positions_loc,
-) {
-    GL.clearColor(0.0, 0.0, 0.0, 1.0);
+
+function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
+    let fov = Math.PI / 4;
+    let znear = 0.1;
+    let zfar = 100;
+    let aspect_ratio = SCENE_CANVAS.width / SCENE_CANVAS.height;
+    let scale = { x: 1.0, y: 1.0, z: 1.0 };
+    let translation = { x: 0.0, y: 0.0, z: -5 };
+
+    let view = get_view(VIEW_POSITION, VIEW_ROTATION);
+    let projection = get_perspective_projection(fov, znear, zfar, aspect_ratio);
+
+    let cube_rotation = { x: 0.0, y: 0.0, z: 0.0 };
+    let cube_model = get_model(scale, cube_rotation, translation);
+
+    let cube_axis_rotation = cube_rotation;
+    let cube_axis_model = get_model(scale, cube_axis_rotation, translation);
+
+    let global_axis_rotation = { x: 0.0, y: 0.0, z: 0.0 };
+    let global_axis_model = get_model(scale, global_axis_rotation, translation);
+
+    GL.clearColor(0.8, 0.8, 0.9, 1.0);
     GL.clearDepth(1.0);
     GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 
-    GL.useProgram(program);
-    GL.bindVertexArray(vao);
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, ebo);
-    let n_elements = GL.getBufferParameter(GL.ELEMENT_ARRAY_BUFFER, GL.BUFFER_SIZE) / 2;
+    draw_lines(GL, program, global_axis_vao, global_axis_model, view, projection, 6);
+    draw_lines(GL, program, cube_axis_vao, cube_axis_model, view, projection, 6);
+    draw_triangles(GL, program, cube_vao, cube_model, view, projection, 36);
 
-    GL.drawElements(GL.TRIANGLES, n_elements, GL.UNSIGNED_SHORT, 0);
 
-    requestAnimationFrame(() => draw(
-        program,
-        vao,
-        ebo,
-        n_elements,
-        vertex_positions_loc,
-    ));
+    requestAnimationFrame(() => draw(program, global_axis_vao, cube_axis_vao, cube_vao));
 }
 
-function compile_program(vert_shader_src, frag_shader_src) {
-    const vert_shader = compile_shader(GL.VERTEX_SHADER, vert_shader_src);
-    const frag_shader = compile_shader(GL.FRAGMENT_SHADER, frag_shader_src);
-    const shader = GL.createProgram();
-
-    GL.attachShader(shader, vert_shader);
-    GL.attachShader(shader, frag_shader);
-    GL.linkProgram(shader);
-
-    if (!GL.getProgramParameter(shader, GL.LINK_STATUS)) {
-        throw (`Can't compile shader: ${GL.getProgramInfoLog(shader)}`);
+function onmousemove(event) {
+    if (MOUSE_POSITION.x !== null) {
+        let diff_x = event.x - MOUSE_POSITION.x;
+        let diff_y = MOUSE_POSITION.y - event.y;
+        if (MOUSE_DOWN) {
+            VIEW_ROTATION.x -= diff_y / 800;
+            VIEW_ROTATION.y += diff_x / 800;
+        } else if (WHEEL_DOWN) {
+            VIEW_POSITION.x -= diff_x / 800;
+            VIEW_POSITION.y -= diff_y / 800;
+        }
     }
 
-    return shader;
+    MOUSE_POSITION.x = event.x;
+    MOUSE_POSITION.y = event.y;
 }
 
-function compile_shader(type, source) {
-    const shader = GL.createShader(type);
-    GL.shaderSource(shader, source);
-    GL.compileShader(shader)
-
-    if (!GL.getShaderParameter(shader, GL.COMPILE_STATUS)) {
-        throw (`Can't compile shader: ${GL.getShaderInfoLog(shader)}`);
+function onmousedown(event) {
+    if (event.buttons === 4) {
+        WHEEL_DOWN = true;
+    } else if (event.buttons === 1) {
+        MOUSE_DOWN = true;
     }
-
-    return shader;
 }
+
+function onmouseup() {
+    WHEEL_DOWN = false;
+    MOUSE_DOWN = false;
+}
+
+SCENE_CANVAS.onmousemove = onmousemove;
+SCENE_CANVAS.onmousedown = onmousedown;
+SCENE_CANVAS.onmouseup = onmouseup;
+SCENE_CANVAS.onmouseleave = onmouseup;
 
 window.onload = main;
