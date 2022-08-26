@@ -10,6 +10,9 @@ const GL = SCENE_CANVAS.getContext("webgl2");
 var MOUSE_DOWN = false;
 var WHEEL_DOWN = false;
 var MOUSE_POSITION = { x: null, y: null };
+var SIDE_MOVEMENT_SENS = 2.0;
+var FORWARD_MOVEMENT_SENS = 2.0;
+var ROTATE_SENS = 2.0;
 var CAMERA = new Camera();
 
 const VERT_SHADER_SRC = `#version 300 es
@@ -99,15 +102,26 @@ function onmousemove(event) {
         let diff_x = event.x - MOUSE_POSITION.x;
         let diff_y = MOUSE_POSITION.y - event.y;
         if (MOUSE_DOWN) {
-            CAMERA.rotate(-diff_y / 1000, -diff_x / 1000);
+            CAMERA.rotate(
+                -diff_y * ROTATE_SENS / 1000,
+                -diff_x * ROTATE_SENS / 1000
+            );
         } else if (WHEEL_DOWN) {
-            CAMERA.move_side(-diff_x / 300, -diff_y / 300);
+            CAMERA.move_side(
+                -diff_x * SIDE_MOVEMENT_SENS / 300,
+                -diff_y * SIDE_MOVEMENT_SENS / 300
+            );
         }
     }
 
     MOUSE_POSITION.x = event.x;
     MOUSE_POSITION.y = event.y;
 }
+
+function onwheel(event) {
+    CAMERA.move_forward(event.deltaY * FORWARD_MOVEMENT_SENS / 300);
+}
+
 
 function onmousedown(event) {
     if (event.buttons === 4) {
@@ -120,10 +134,6 @@ function onmousedown(event) {
 function onmouseup() {
     WHEEL_DOWN = false;
     MOUSE_DOWN = false;
-}
-
-function onwheel(event) {
-    CAMERA.move_forward(event.deltaY / 300);
 }
 
 SCENE_CANVAS.onmousemove = onmousemove;
