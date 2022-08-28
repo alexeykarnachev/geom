@@ -1,7 +1,7 @@
 /** @type {HTMLDivElement} */
 const CONTROL_PANEL = document.getElementById("control_panel");
 
-const SLIDER_CONFIGS = {
+const PANEL_CONFIGS = {
     camera: {
         label: "Camera Control",
         sliders: {
@@ -19,6 +19,12 @@ const SLIDER_CONFIGS = {
         selects: {
             order: { label: "Order", values: ["X-Y-Z", "X-Z-Y", "Y-X-Z", "Y-Z-X", "Z-X-Y", "Z-Y-X"], value: "XYZ", conversion: remove_dashes },
         }
+    },
+    animation: {
+        label: "Animation",
+        buttons: {
+            run: { label: "Run", value: 0, off_color: "gray", on_color: "red", off_label: "Start", on_label: "Stop"}
+        }
     }
 }
 
@@ -31,26 +37,30 @@ function remove_dashes(value) {
 }
 
 export function get_slider_value(panel_name, slider_name) {
-    let config = SLIDER_CONFIGS[panel_name].sliders[slider_name];
-    if (config.conversion != null) {
-        return config.conversion(config.value);
-    }
-    return config.value;
+    return get_value(panel_name, "sliders", slider_name);
 }
 
 export function get_select_value(panel_name, select_name) {
-    let config = SLIDER_CONFIGS[panel_name].selects[select_name];
+    return get_value(panel_name, "selects", select_name);
+}
+
+export function get_button_value(panel_name, button_name) {
+    return get_value(panel_name, "buttons", button_name);
+}
+
+function get_value(panel_name, type, name) {
+    let config = PANEL_CONFIGS[panel_name][type][name];
     if (config.conversion != null) {
         return config.conversion(config.value);
     }
     return config.value;
 }
 
-export function add_all_sliders() {
-    add_sliders(CONTROL_PANEL, SLIDER_CONFIGS);
+export function create_panel() {
+    _create_panel(CONTROL_PANEL, PANEL_CONFIGS);
 }
 
-function add_sliders(parent, configs) {
+function _create_panel(parent, configs) {
     for (let panel_key in configs) {
         const panel_config = configs[panel_key];
         const panel = document.createElement("div");
@@ -59,6 +69,7 @@ function add_sliders(parent, configs) {
         panel_header.innerHTML = panel_config.label;
         panel.appendChild(panel_header);
         parent.appendChild(panel);
+
         for (let slider_key in panel_config.sliders) {
             const slider_conf = panel_config.sliders[slider_key];
             add_slider(panel, slider_conf);
@@ -67,6 +78,11 @@ function add_sliders(parent, configs) {
         for (let select_key in panel_config.selects) {
             const select_conf = panel_config.selects[select_key];
             add_select(panel, select_conf);
+        }
+
+        for (let button_key in panel_config.buttons) {
+            const button_conf = panel_config.buttons[button_key];
+            add_button(panel, button_conf)
         }
     }
 }
@@ -122,7 +138,7 @@ function add_select(parent, config) {
         select.appendChild(option);
     }
 
-    select.onchange = function() {
+    select.onchange = function () {
         let value = this.options[this.selectedIndex].text;
         if (config.conversion != null) {
             value = config.conversion(value);
@@ -132,4 +148,26 @@ function add_select(parent, config) {
 
     label.appendChild(select);
     parent.appendChild(label);
+}
+
+function add_button(parent, config) {
+    let button = document.createElement("button");
+    button.style.fontSize = "20px";
+    button.innerHTML = config.off_label;
+    button.style.backgroundColor = config.off_color;
+
+    button.onclick = function () {
+        config.value = 1 - config.value;
+        if (config.value === 1) {
+            var color = config.on_color;
+            var label = config.on_label;
+        } else {
+            var color = config.off_color;
+            var label = config.off_label;
+        }
+        button.style.backgroundColor = color;
+        button.innerHTML = label;
+    }
+
+    parent.appendChild(button);
 }

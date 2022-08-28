@@ -1,7 +1,7 @@
 import { Camera } from "./camera.js";
 import { compile_program, get_axis_vao, get_cube_vao, draw_lines, draw_triangles } from "./gl.js";
 import { get_model, get_perspective_projection } from "./linear_algebra.js";
-import { get_slider_value, get_select_value, add_all_sliders } from "./sliders.js";
+import { get_slider_value, get_select_value, get_button_value, create_panel } from "./control_panel.js";
 
 /** @type {HTMLCanvasElement} */
 const SCENE_CANVAS = document.getElementById("scene");
@@ -28,8 +28,18 @@ async function main() {
     requestAnimationFrame(() => draw(program, global_axis_vao, cube_axis_vao, cube_vao));
 }
 
+const ANIMATION_CYCLE_DURATION = 3000;
+var ANIMATION_CUR_DURATION = 0;
+var LAST_FRAME_TIME = null;
 
 function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
+
+    const cur_frame_time = new Date();
+    let dt = null;
+    if (LAST_FRAME_TIME != null) {
+        dt = cur_frame_time - LAST_FRAME_TIME;
+    }
+
     let fov = get_slider_value("camera", "fov");
     let znear = 0.1;
     let zfar = 100;
@@ -40,11 +50,22 @@ function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
     let view = CAMERA.get_view();
     let projection = get_perspective_projection(fov, znear, zfar, aspect_ratio);
 
-    let cube_rotation = {
-        x: get_slider_value("euler", "x"),
-        y: get_slider_value("euler", "y"),
-        z: get_slider_value("euler", "z")
-    };
+    if (get_button_value("animation", "run") == 1) {
+        ANIMATION_CUR_DURATION = (ANIMATION_CUR_DURATION + dt) % ANIMATION_CYCLE_DURATION;
+    } else {
+        ANIMATION_CUR_DURATION = 0;
+    }
+
+    if (ANIMATION_CUR_DURATION != 0) {
+        var cube_rotation = get_animation_stage_rotation();
+    } else {
+        var cube_rotation = {
+            x: get_slider_value("euler", "x"),
+            y: get_slider_value("euler", "y"),
+            z: get_slider_value("euler", "z")
+        };
+    }
+
     let cube_rotation_order = get_select_value("euler", "order");
     let cube_model = get_model(scale, cube_rotation, translation, cube_rotation_order);
 
@@ -62,8 +83,26 @@ function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
     draw_lines(GL, program, cube_axis_vao, cube_axis_model, view, projection, 6);
     draw_triangles(GL, program, cube_vao, cube_model, view, projection, 36);
 
-
     requestAnimationFrame(() => draw(program, global_axis_vao, cube_axis_vao, cube_vao));
+    LAST_FRAME_TIME = cur_frame_time;
+}
+
+function get_animation_stage_rotation() {
+    const cur_stage = Math.floor((ANIMATION_CUR_DURATION / ANIMATION_CYCLE_DURATION) * 3);
+    const cur_stage_duration = ANIMATION_CUR_DURATION % (ANIMATION_CYCLE_DURATION / 3);
+    const cur_stage_progress = cur_stage_duration / (ANIMATION_CYCLE_DURATION / 3);
+    let rotation_order = get_select_value("euler", "order");
+    rotation_order = rotation_order.toLowerCase().split("");
+    let rotation = {x: 0, y: 0, z: 0};
+    for (let i = 0; i < 3; ++i) {
+        let cur_axe = rotation_order[i];
+        if (i < cur_stage) {
+            rotation[cur_axe] = get_slider_value("euler", cur_axe);
+        } else if (i === cur_stage) {
+            rotation[cur_axe] = cur_stage_progress * get_slider_value("euler", cur_axe);
+        }
+    }
+    return rotation;
 }
 
 function onmousemove(event) {
@@ -113,6 +152,6 @@ SCENE_CANVAS.onmouseup = onmouseup;
 SCENE_CANVAS.onmouseleave = onmouseup;
 SCENE_CANVAS.onwheel = onwheel;
 
-add_all_sliders();
+create_panel();
 
 window.onload = main;
