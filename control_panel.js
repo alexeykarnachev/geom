@@ -9,6 +9,14 @@ const PANEL_CONFIGS = {
             sensitivity: { label: "Sens", min: 0.1, max: 10, value: 2, step: 0.1, conversion: null },
         }
     },
+    scale: {
+        label: "Scale",
+        sliders: {
+            x: { label: "X", min: 1, max: 5, value: 1, step: 0.05, conversion: null },
+            y: { label: "Y", min: 1, max: 5, value: 1, step: 0.05, conversion: null },
+            z: { label: "Z", min: 1, max: 5, value: 1, step: 0.05, conversion: null },
+        },
+    },
     euler: {
         label: "Euler Rotation",
         sliders: {
@@ -16,14 +24,26 @@ const PANEL_CONFIGS = {
             y: { label: "Y", min: -360, max: 360, value: 0, step: 1, conversion: to_radians },
             z: { label: "Z", min: -360, max: 360, value: 0, step: 1, conversion: to_radians },
         },
+    },
+    translation: {
+        label: "Translation",
+        sliders: {
+            x: { label: "X", min: -10, max: 10, value: 0, step: 0.1, conversion: null },
+            y: { label: "Y", min: -10, max: 10, value: 0, step: 0.1, conversion: null },
+            z: { label: "Z", min: -10, max: 10, value: 0, step: 0.1, conversion: null },
+        }
+    },
+    model: {
+        label: "Model matrix",
         selects: {
-            order: { label: "Order", values: ["X-Y-Z", "X-Z-Y", "Y-X-Z", "Y-Z-X", "Z-X-Y", "Z-Y-X"], value: "XYZ", conversion: remove_dashes },
+            rotation: { label: "Rotation order", values: ["X-Y-Z", "X-Z-Y", "Y-X-Z", "Y-Z-X", "Z-X-Y", "Z-Y-X"], value: "X-Y-Z", conversion: remove_dashes },
+            transformation: { label: "Transformation order", values: ["S-R-T", "S-T-R", "R-S-T", "R-T-S", "T-S-R", "T-R-S"], value: "S-R-T", conversion: remove_dashes },
         }
     },
     animation: {
         label: "Animation",
         buttons: {
-            run: { label: "Run", value: 0, off_color: "gray", on_color: "red", off_label: "Start", on_label: "Stop"}
+            run: { label: "Run", value: 0, off_color: "gray", on_color: "red", off_label: "Start", on_label: "Stop" }
         }
     }
 }
@@ -49,7 +69,12 @@ export function get_button_value(panel_name, button_name) {
 }
 
 function get_value(panel_name, type, name) {
-    let config = PANEL_CONFIGS[panel_name][type][name];
+    try {
+        var config = PANEL_CONFIGS[panel_name][type][name];
+    } catch (error) {
+        throw (`Can't find configuration for panel: PANEL_CONFIGS['${panel_name}']['${type}']['${name}']`)
+    }
+
     if (config.conversion != null) {
         return config.conversion(config.value);
     }

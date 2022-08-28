@@ -45,8 +45,9 @@ function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
     let znear = 0.1;
     let zfar = 100;
     let aspect_ratio = SCENE_CANVAS.width / SCENE_CANVAS.height;
-    let scale = { x: 1.0, y: 1.0, z: 1.0 };
-    let translation = { x: 0.0, y: 0.0, z: -5 };
+    let global_axis_scale = { x: 1.0, y: 1.0, z: 1.0 };
+    let global_axis_translation = { x: 0.0, y: 0.0, z: 0.0 };
+    let global_axis_rotation = { x: 0.0, y: 0.0, z: 0.0 };
 
     let view = CAMERA.get_view();
     let projection = get_perspective_projection(fov, znear, zfar, aspect_ratio);
@@ -58,23 +59,33 @@ function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
     }
 
     if (ANIMATION_CUR_DURATION != 0) {
+        var cube_translation = get_animation_stage_translation();
         var cube_rotation = get_animation_stage_rotation();
+        var cube_scale = get_animation_stage_scale();
     } else {
         var cube_rotation = {
             x: get_slider_value("euler", "x"),
             y: get_slider_value("euler", "y"),
             z: get_slider_value("euler", "z")
         };
+        var cube_translation = {
+            x: get_slider_value("translation", "x"),
+            y: get_slider_value("translation", "y"),
+            z: get_slider_value("translation", "z")
+        };
+        var cube_scale = {
+            x: get_slider_value("scale", "x"),
+            y: get_slider_value("scale", "y"),
+            z: get_slider_value("scale", "z")
+        };
     }
 
-    let cube_rotation_order = get_select_value("euler", "order");
-    let cube_model = get_model(scale, cube_rotation, translation, cube_rotation_order);
+    let cube_rotation_order = get_select_value("model", "rotation");
+    let cube_transformation_order = get_select_value("model", "transformation")
+    let cube_model = get_model(cube_scale, cube_rotation, cube_translation, cube_rotation_order, cube_transformation_order);
+    let cube_axis_model = get_model(cube_scale, cube_rotation, cube_translation, cube_rotation_order, cube_transformation_order);
 
-    let cube_axis_rotation = cube_rotation;
-    let cube_axis_model = get_model(scale, cube_axis_rotation, translation, cube_rotation_order);
-
-    let global_axis_rotation = { x: 0.0, y: 0.0, z: 0.0 };
-    let global_axis_model = get_model(scale, global_axis_rotation, translation);
+    let global_axis_model = get_model(global_axis_scale, global_axis_rotation, global_axis_translation);
 
     GL.clearColor(0.8, 0.8, 0.9, 1.0);
     GL.clearDepth(1.0);
@@ -88,13 +99,33 @@ function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
     LAST_FRAME_TIME = cur_frame_time;
 }
 
+function get_animation_stage_scale() {
+    let progress = Math.min(1, ANIMATION_CUR_DURATION / ANIMATION_CYCLE_DURATION);
+    progress = hermit(0, 1, progress);
+    return {
+        x: progress * (get_slider_value("scale", "x") - 1) + 1,
+        y: progress * (get_slider_value("scale", "y") - 1) + 1,
+        z: progress * (get_slider_value("scale", "z") - 1) + 1
+    };
+}
+
+function get_animation_stage_translation() {
+    let progress = Math.min(1, ANIMATION_CUR_DURATION / ANIMATION_CYCLE_DURATION);
+    progress = hermit(0, 1, progress);
+    return {
+        x: progress * get_slider_value("translation", "x"),
+        y: progress * get_slider_value("translation", "y"),
+        z: progress * get_slider_value("translation", "z")
+    };
+}
+
 function get_animation_stage_rotation() {
     const cur_stage = Math.floor((ANIMATION_CUR_DURATION / ANIMATION_CYCLE_DURATION) * 3);
     const cur_stage_duration = ANIMATION_CUR_DURATION % (ANIMATION_CYCLE_DURATION / 3);
     let cur_stage_progress = cur_stage_duration / (ANIMATION_CYCLE_DURATION / 3);
     cur_stage_progress = hermit(0, 1, cur_stage_progress);
 
-    let rotation_order = get_select_value("euler", "order");
+    let rotation_order = get_select_value("model", "rotation");
     rotation_order = rotation_order.toLowerCase().split("");
     let rotation = { x: 0, y: 0, z: 0 };
     for (let i = 0; i < 3; ++i) {
@@ -106,6 +137,7 @@ function get_animation_stage_rotation() {
         }
     }
     return rotation;
+
 }
 
 function hermit(a, b, p) {

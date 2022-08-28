@@ -4,7 +4,7 @@ import { norm, cross, negate, dot, scale, get_rotation_matrix, matvecmul} from "
 export class Camera {
     constructor() {
         this.view_dir = [0, 0, -1];
-        this.position = [0, 0, 0];
+        this.position = [0, 0, 5];
         this.x_angle = 0;
         this.y_angle = 0;
     }

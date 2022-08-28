@@ -109,31 +109,24 @@ export function matmul_chain(...matrices) {
 }
 
 export function get_rotation_matrix(order, x, y, z) {
-    let rx = get_rotation_over_x_matrix(x);
-    let ry = get_rotation_over_y_matrix(y);
-    let rz = get_rotation_over_z_matrix(z);
-    if (order === "XYZ") {
-        return matmul_chain(rz, ry, rx);
-    } else if (order === "XZY") {
-        return matmul_chain(ry, rz, rx);
-    } else if (order === "YXZ") {
-        return matmul_chain(rz, rx, ry);
-    } else if (order === "YZX") {
-        return matmul_chain(rx, rz, ry);
-    } else if (order === "ZXY") {
-        return matmul_chain(ry, rx, rz);
-    } else if (order === "ZYX") {
-        return matmul_chain(rx, ry, rz);
-    } else {
-        throw(`Wrong rotation order: ${order}, please select one of the "XYZ" permutations`);
+    let matrices = {
+        x: get_rotation_over_x_matrix(x),
+        y: get_rotation_over_y_matrix(y),
+        z: get_rotation_over_z_matrix(z)
     }
+    order = order.toLowerCase().split("")
+    
+    return matmul_chain(matrices[order[2]], matrices[order[1]], matrices[order[0]]);
 }
 
-export function get_model(scale, rotation, translation, rotation_order="XYZ") {
-    let s = get_scale_matrix(scale.x, scale.y, scale.z);
-    let r = get_rotation_matrix(rotation_order, rotation.x, rotation.y, rotation.z);
-    let t = get_translation_matrix(translation.x, translation.y, translation.z);
-    let matrix = matmul_chain(s, r, t);
+export function get_model(scale, rotation, translation, rotation_order = "XYZ", transformation_order = "SRT") {
+    let matrices = {
+        s: get_scale_matrix(scale.x, scale.y, scale.z),
+        r: get_rotation_matrix(rotation_order, rotation.x, rotation.y, rotation.z),
+        t: get_translation_matrix(translation.x, translation.y, translation.z)
+    }
+    let order = transformation_order.toLowerCase().split("")
+    let matrix = matmul_chain(matrices[order[2]], matrices[order[1]], matrices[order[0]]);
 
     return new Float32Array(matrix.flat());
 }
