@@ -119,7 +119,7 @@ export function get_rotation_matrix(order, x, y, z) {
     } else if (order === "YXZ") {
         return matmul_chain(rz, rx, ry);
     } else if (order === "YZX") {
-        return matmul_chain(rz, rz, ry);
+        return matmul_chain(rx, rz, ry);
     } else if (order === "ZXY") {
         return matmul_chain(ry, rx, rz);
     } else if (order === "ZYX") {

@@ -29,6 +29,7 @@ async function main() {
 }
 
 const ANIMATION_CYCLE_DURATION = 3000;
+const ANIMATION_COOLDOWN = 1000;
 var ANIMATION_CUR_DURATION = 0;
 var LAST_FRAME_TIME = null;
 
@@ -51,7 +52,7 @@ function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
     let projection = get_perspective_projection(fov, znear, zfar, aspect_ratio);
 
     if (get_button_value("animation", "run") == 1) {
-        ANIMATION_CUR_DURATION = (ANIMATION_CUR_DURATION + dt) % ANIMATION_CYCLE_DURATION;
+        ANIMATION_CUR_DURATION = (ANIMATION_CUR_DURATION + dt) % (ANIMATION_CYCLE_DURATION + ANIMATION_COOLDOWN);
     } else {
         ANIMATION_CUR_DURATION = 0;
     }
@@ -90,10 +91,12 @@ function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
 function get_animation_stage_rotation() {
     const cur_stage = Math.floor((ANIMATION_CUR_DURATION / ANIMATION_CYCLE_DURATION) * 3);
     const cur_stage_duration = ANIMATION_CUR_DURATION % (ANIMATION_CYCLE_DURATION / 3);
-    const cur_stage_progress = cur_stage_duration / (ANIMATION_CYCLE_DURATION / 3);
+    let cur_stage_progress = cur_stage_duration / (ANIMATION_CYCLE_DURATION / 3);
+    cur_stage_progress = hermit(0, 1, cur_stage_progress);
+
     let rotation_order = get_select_value("euler", "order");
     rotation_order = rotation_order.toLowerCase().split("");
-    let rotation = {x: 0, y: 0, z: 0};
+    let rotation = { x: 0, y: 0, z: 0 };
     for (let i = 0; i < 3; ++i) {
         let cur_axe = rotation_order[i];
         if (i < cur_stage) {
@@ -103,6 +106,15 @@ function get_animation_stage_rotation() {
         }
     }
     return rotation;
+}
+
+function hermit(a, b, p) {
+    let t = clamp((p - a) / (b - a), 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);
+}
+
+function clamp(x, min, max) {
+    return Math.min(Math.max(x, min), max);
 }
 
 function onmousemove(event) {
