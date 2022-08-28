@@ -113,17 +113,17 @@ export function get_rotation_matrix(order, x, y, z) {
     let ry = get_rotation_over_y_matrix(y);
     let rz = get_rotation_over_z_matrix(z);
     if (order === "XYZ") {
-        return matmul_chain(rx, ry, rz);
-    } else if (order === "XZY") {
-        return matmul_chain(rx, rz, ry);
-    } else if (order === "YXZ") {
-        return matmul_chain(ry, rx, rz);
-    } else if (order === "YZX") {
-        return matmul_chain(ry, rz, rx);
-    } else if (order === "ZXY") {
-        return matmul_chain(rz, rx, ry);
-    } else if (order === "ZYX") {
         return matmul_chain(rz, ry, rx);
+    } else if (order === "XZY") {
+        return matmul_chain(ry, rz, rx);
+    } else if (order === "YXZ") {
+        return matmul_chain(rz, rx, ry);
+    } else if (order === "YZX") {
+        return matmul_chain(rz, rz, ry);
+    } else if (order === "ZXY") {
+        return matmul_chain(ry, rx, rz);
+    } else if (order === "ZYX") {
+        return matmul_chain(rx, ry, rz);
     } else {
         throw(`Wrong rotation order: ${order}, please select one of the "XYZ" permutations`);
     }
