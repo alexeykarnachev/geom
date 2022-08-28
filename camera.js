@@ -46,7 +46,7 @@ export class Camera {
         this.x_angle += x_angle;
         this.y_angle += y_angle;
 
-        let r = get_rotation_matrix(this.x_angle, this.y_angle, 0);
+        let r = get_rotation_matrix("XYZ", this.x_angle, this.y_angle, 0);
         let view_dir = matvecmul(r, [0, 0, -1, 0]);
         view_dir.pop();
         this.view_dir = view_dir;
