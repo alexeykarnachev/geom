@@ -1,7 +1,8 @@
 import { Camera } from "./camera.js";
 import { compile_program, get_axis_vao, get_cube_vao, draw_lines, draw_triangles } from "./gl.js";
-import { get_model, get_perspective_projection } from "./linear_algebra.js";
+import { get_model_matrix, get_perspective_projection_matrix } from "./linear_algebra.js";
 import { get_slider_value, get_select_value, get_button_value, create_panel } from "./control_panel.js";
+import { Animator } from "./animator.js";
 
 /** @type {HTMLCanvasElement} */
 const SCENE_CANVAS = document.getElementById("scene");
@@ -12,6 +13,7 @@ var MOUSE_DOWN = false;
 var WHEEL_DOWN = false;
 var MOUSE_POSITION = { x: null, y: null };
 var CAMERA = new Camera();
+var ANIMATOR = new Animator(6000, 1000, "XYZ", "RST");
 
 async function main() {
     const vert_shader_src = await fetch("./assets/shaders/simple.vert").then(response => response.text());
@@ -28,9 +30,6 @@ async function main() {
     requestAnimationFrame(() => draw(program, global_axis_vao, cube_axis_vao, cube_vao));
 }
 
-const ANIMATION_CYCLE_DURATION = 3000;
-const ANIMATION_COOLDOWN = 1000;
-var ANIMATION_CUR_DURATION = 0;
 var LAST_FRAME_TIME = null;
 
 function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
@@ -50,103 +49,41 @@ function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
     let global_axis_rotation = { x: 0.0, y: 0.0, z: 0.0 };
 
     let view = CAMERA.get_view();
-    let projection = get_perspective_projection(fov, znear, zfar, aspect_ratio);
+    let projection = get_perspective_projection_matrix(fov, znear, zfar, aspect_ratio);
+    ANIMATOR.toggle(get_button_value("animation", "run") == 1);
+    ANIMATOR.transformation_order = get_select_value("model", "transformation");
+    ANIMATOR.rotation_order = get_select_value("model", "rotation");
+    ANIMATOR.step(dt);
 
-    if (get_button_value("animation", "run") == 1) {
-        ANIMATION_CUR_DURATION = (ANIMATION_CUR_DURATION + dt) % (ANIMATION_CYCLE_DURATION + ANIMATION_COOLDOWN);
-    } else {
-        ANIMATION_CUR_DURATION = 0;
-    }
+    var cube_scale = {
+        x: get_slider_value("scale", "x"),
+        y: get_slider_value("scale", "y"),
+        z: get_slider_value("scale", "z")
+    };
+    var cube_translation = {
+        x: get_slider_value("translation", "x"),
+        y: get_slider_value("translation", "y"),
+        z: get_slider_value("translation", "z")
+    };
+    var cube_rotation = {
+        x: get_slider_value("euler", "x"),
+        y: get_slider_value("euler", "y"),
+        z: get_slider_value("euler", "z")
+    };
 
-    if (ANIMATION_CUR_DURATION != 0) {
-        var cube_translation = get_animation_stage_translation();
-        var cube_rotation = get_animation_stage_rotation();
-        var cube_scale = get_animation_stage_scale();
-    } else {
-        var cube_rotation = {
-            x: get_slider_value("euler", "x"),
-            y: get_slider_value("euler", "y"),
-            z: get_slider_value("euler", "z")
-        };
-        var cube_translation = {
-            x: get_slider_value("translation", "x"),
-            y: get_slider_value("translation", "y"),
-            z: get_slider_value("translation", "z")
-        };
-        var cube_scale = {
-            x: get_slider_value("scale", "x"),
-            y: get_slider_value("scale", "y"),
-            z: get_slider_value("scale", "z")
-        };
-    }
-
-    let cube_rotation_order = get_select_value("model", "rotation");
-    let cube_transformation_order = get_select_value("model", "transformation")
-    let cube_model = get_model(cube_scale, cube_rotation, cube_translation, cube_rotation_order, cube_transformation_order);
-    let cube_axis_model = get_model(cube_scale, cube_rotation, cube_translation, cube_rotation_order, cube_transformation_order);
-
-    let global_axis_model = get_model(global_axis_scale, global_axis_rotation, global_axis_translation);
+    let cube_model_matrix = ANIMATOR.animate(cube_scale, cube_translation, cube_rotation);
+    let global_axis_model_matrix = get_model_matrix(global_axis_scale, global_axis_rotation, global_axis_translation);
 
     GL.clearColor(0.8, 0.8, 0.9, 1.0);
     GL.clearDepth(1.0);
     GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 
-    draw_lines(GL, program, global_axis_vao, global_axis_model, view, projection, 6);
-    draw_lines(GL, program, cube_axis_vao, cube_axis_model, view, projection, 6);
-    draw_triangles(GL, program, cube_vao, cube_model, view, projection, 36);
+    draw_lines(GL, program, global_axis_vao, global_axis_model_matrix, view, projection, 6);
+    draw_lines(GL, program, cube_axis_vao, cube_model_matrix, view, projection, 6);
+    draw_triangles(GL, program, cube_vao, cube_model_matrix, view, projection, 36);
 
     requestAnimationFrame(() => draw(program, global_axis_vao, cube_axis_vao, cube_vao));
     LAST_FRAME_TIME = cur_frame_time;
-}
-
-function get_animation_stage_scale() {
-    let progress = Math.min(1, ANIMATION_CUR_DURATION / ANIMATION_CYCLE_DURATION);
-    progress = hermit(0, 1, progress);
-    return {
-        x: progress * (get_slider_value("scale", "x") - 1) + 1,
-        y: progress * (get_slider_value("scale", "y") - 1) + 1,
-        z: progress * (get_slider_value("scale", "z") - 1) + 1
-    };
-}
-
-function get_animation_stage_translation() {
-    let progress = Math.min(1, ANIMATION_CUR_DURATION / ANIMATION_CYCLE_DURATION);
-    progress = hermit(0, 1, progress);
-    return {
-        x: progress * get_slider_value("translation", "x"),
-        y: progress * get_slider_value("translation", "y"),
-        z: progress * get_slider_value("translation", "z")
-    };
-}
-
-function get_animation_stage_rotation() {
-    const cur_stage = Math.floor((ANIMATION_CUR_DURATION / ANIMATION_CYCLE_DURATION) * 3);
-    const cur_stage_duration = ANIMATION_CUR_DURATION % (ANIMATION_CYCLE_DURATION / 3);
-    let cur_stage_progress = cur_stage_duration / (ANIMATION_CYCLE_DURATION / 3);
-    cur_stage_progress = hermit(0, 1, cur_stage_progress);
-
-    let rotation_order = get_select_value("model", "rotation");
-    rotation_order = rotation_order.toLowerCase().split("");
-    let rotation = { x: 0, y: 0, z: 0 };
-    for (let i = 0; i < 3; ++i) {
-        let cur_axe = rotation_order[i];
-        if (i < cur_stage) {
-            rotation[cur_axe] = get_slider_value("euler", cur_axe);
-        } else if (i === cur_stage) {
-            rotation[cur_axe] = cur_stage_progress * get_slider_value("euler", cur_axe);
-        }
-    }
-    return rotation;
-
-}
-
-function hermit(a, b, p) {
-    let t = clamp((p - a) / (b - a), 0.0, 1.0);
-    return t * t * (3.0 - 2.0 * t);
-}
-
-function clamp(x, min, max) {
-    return Math.min(Math.max(x, min), max);
 }
 
 function onmousemove(event) {

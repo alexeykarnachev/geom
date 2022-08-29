@@ -1,6 +1,13 @@
 /** @type {HTMLDivElement} */
 const CONTROL_PANEL = document.getElementById("control_panel");
 
+const PANEL_HEADER_FONT_SIZE = "20px"
+const SLIDER_LABEL_FONT_SIZE = "18px";
+const SELECT_LABEL_FONT_SIZE = "16px";
+const SELECT_FONT_SIZE = "12px";
+const BUTTON_FONT_SIZE = "16px";
+const SLIDER_STYLE_WIDTH = "200px";
+
 const PANEL_CONFIGS = {
     camera: {
         label: "Camera Control",
@@ -9,20 +16,20 @@ const PANEL_CONFIGS = {
             sensitivity: { label: "Sens", min: 0.1, max: 10, value: 2, step: 0.1, conversion: null },
         }
     },
-    scale: {
-        label: "Scale",
-        sliders: {
-            x: { label: "X", min: 1, max: 5, value: 1, step: 0.05, conversion: null },
-            y: { label: "Y", min: 1, max: 5, value: 1, step: 0.05, conversion: null },
-            z: { label: "Z", min: 1, max: 5, value: 1, step: 0.05, conversion: null },
-        },
-    },
     euler: {
         label: "Euler Rotation",
         sliders: {
             x: { label: "X", min: -360, max: 360, value: 0, step: 1, conversion: to_radians },
             y: { label: "Y", min: -360, max: 360, value: 0, step: 1, conversion: to_radians },
             z: { label: "Z", min: -360, max: 360, value: 0, step: 1, conversion: to_radians },
+        },
+    },
+    scale: {
+        label: "Scale",
+        sliders: {
+            x: { label: "X", min: 1, max: 5, value: 1, step: 0.05, conversion: null },
+            y: { label: "Y", min: 1, max: 5, value: 1, step: 0.05, conversion: null },
+            z: { label: "Z", min: 1, max: 5, value: 1, step: 0.05, conversion: null },
         },
     },
     translation: {
@@ -37,7 +44,7 @@ const PANEL_CONFIGS = {
         label: "Model matrix",
         selects: {
             rotation: { label: "Rotation order", values: ["X-Y-Z", "X-Z-Y", "Y-X-Z", "Y-Z-X", "Z-X-Y", "Z-Y-X"], value: "X-Y-Z", conversion: remove_dashes },
-            transformation: { label: "Transformation order", values: ["S-R-T", "S-T-R", "R-S-T", "R-T-S", "T-S-R", "T-R-S"], value: "S-R-T", conversion: remove_dashes },
+            transformation: { label: "Transformation order", values: ["R-S-T", "R-T-S", "S-R-T", "S-T-R", "T-R-S", "T-S-R"], value: "R-S-T", conversion: remove_dashes },
         }
     },
     animation: {
@@ -90,7 +97,7 @@ function _create_panel(parent, configs) {
         const panel_config = configs[panel_key];
         const panel = document.createElement("div");
         const panel_header = document.createElement("h1");
-        panel_header.style.fontSize = "24px";
+        panel_header.style.fontSize = PANEL_HEADER_FONT_SIZE;
         panel_header.innerHTML = panel_config.label;
         panel.appendChild(panel_header);
         parent.appendChild(panel);
@@ -128,9 +135,9 @@ function add_slider(parent, config) {
     inp.max = config.max;
     inp.step = config.step;
     inp.value = config.value;
-    inp.style.width = "300px";
+    inp.style.width = SLIDER_STYLE_WIDTH;
 
-    label.style.fontSize = "22px";
+    label.style.fontSize = SLIDER_LABEL_FONT_SIZE;
     label.style.margin = "0.5%";
     label.style.width = "250px";
     label.innerHTML = config.label;
@@ -153,9 +160,9 @@ function add_select(parent, config) {
     let select = document.createElement("select");
 
     label.innerHTML = config.label + ": ";
-    label.style.fontSize = "20px";
+    label.style.fontSize = SELECT_LABEL_FONT_SIZE;
 
-    select.style.fontSize = "16px";
+    select.style.fontSize = SELECT_FONT_SIZE;
     for (let value of config.values) {
         let option = document.createElement("option");
         option.value = value;
@@ -177,7 +184,7 @@ function add_select(parent, config) {
 
 function add_button(parent, config) {
     let button = document.createElement("button");
-    button.style.fontSize = "20px";
+    button.style.fontSize = BUTTON_FONT_SIZE;
     button.innerHTML = config.off_label;
     button.style.backgroundColor = config.off_color;
 

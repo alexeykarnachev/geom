@@ -80,7 +80,7 @@ export function get_rotation_over_z_matrix(angle) {
     ];
 }
 
-export function get_perspective_projection(fov, znear, zfar, aspect_ratio) {
+export function get_perspective_projection_matrix(fov, znear, zfar, aspect_ratio) {
     let f = 1.0 / Math.tan(fov / 2.0);
     let range_inv = 1.0 / (znear - zfar);
     let matrix = [
@@ -119,7 +119,7 @@ export function get_rotation_matrix(order, x, y, z) {
     return matmul_chain(matrices[order[2]], matrices[order[1]], matrices[order[0]]);
 }
 
-export function get_model(scale, rotation, translation, rotation_order = "XYZ", transformation_order = "SRT") {
+export function get_model_matrix(scale, rotation, translation, rotation_order = "XYZ", transformation_order = "RST") {
     let matrices = {
         s: get_scale_matrix(scale.x, scale.y, scale.z),
         r: get_rotation_matrix(rotation_order, rotation.x, rotation.y, rotation.z),
