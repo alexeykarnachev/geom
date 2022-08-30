@@ -3,17 +3,17 @@ const CONTROL_PANEL = document.getElementById("control_panel");
 
 const PANEL_HEADER_FONT_SIZE = "20px"
 const SLIDER_LABEL_FONT_SIZE = "18px";
-const SELECT_LABEL_FONT_SIZE = "16px";
-const SELECT_FONT_SIZE = "12px";
+const SELECT_LABEL_FONT_SIZE = "18px";
+const SELECT_FONT_SIZE = "16px";
 const BUTTON_FONT_SIZE = "16px";
 const SLIDER_STYLE_WIDTH = "200px";
 
 const PANEL_CONFIGS = {
-    camera: {
-        label: "Camera Control",
-        sliders: {
-            fov: { label: "FOV", min: 1, max: 180, value: 45, step: 1, conversion: to_radians },
-            sensitivity: { label: "Sens", min: 0.1, max: 10, value: 2, step: 0.1, conversion: null },
+    model: {
+        label: "Model matrix",
+        selects: {
+            rotation: { label: "Rotation order", values: ["X-Y-Z", "X-Z-Y", "Y-X-Z", "Y-Z-X", "Z-X-Y", "Z-Y-X"], value: "X-Y-Z", conversion: remove_dashes },
+            transformation: { label: "Transformation order", values: ["R-S-T", "R-T-S", "S-R-T", "S-T-R", "T-R-S", "T-S-R"], value: "R-S-T", conversion: remove_dashes },
         }
     },
     euler: {
@@ -40,11 +40,10 @@ const PANEL_CONFIGS = {
             z: { label: "Z", min: -10, max: 10, value: 0, step: 0.1, conversion: null },
         }
     },
-    model: {
-        label: "Model matrix",
-        selects: {
-            rotation: { label: "Rotation order", values: ["X-Y-Z", "X-Z-Y", "Y-X-Z", "Y-Z-X", "Z-X-Y", "Z-Y-X"], value: "X-Y-Z", conversion: remove_dashes },
-            transformation: { label: "Transformation order", values: ["R-S-T", "R-T-S", "S-R-T", "S-T-R", "T-R-S", "T-S-R"], value: "R-S-T", conversion: remove_dashes },
+    camera: { label: "Camera Control",
+        sliders: {
+            fov: { label: "FOV", min: 1, max: 180, value: 45, step: 1, conversion: to_radians },
+            sensitivity: { label: "Sens", min: 0.1, max: 10, value: 2, step: 0.1, conversion: null },
         }
     },
     animation: {

@@ -14,14 +14,15 @@ var WHEEL_DOWN = false;
 var MOUSE_POSITION = { x: null, y: null };
 var CAMERA = new Camera();
 var ANIMATOR = new Animator(6000, 1000, "XYZ", "RST");
+const BACKGROUND_COLOR = hex2rgb("#C4C6E7", 0.5);
 
 async function main() {
     const vert_shader_src = await fetch("./assets/shaders/simple.vert").then(response => response.text());
     const frag_shader_src = await fetch("./assets/shaders/simple.frag").then(response => response.text());
     const program = compile_program(GL, vert_shader_src, frag_shader_src);
-    const global_axis_vao = get_axis_vao(GL, program, [0.9, 0.1, 0.1], [0.1, 0.9, 0.1], [0.1, 0.1, 0.9], 100);
-    const cube_axis_vao = get_axis_vao(GL, program, [0.7, 0.7, 0.7], [0.7, 0.7, 0.7], [0.7, 0.7, 0.7], 1);
-    const cube_vao = get_cube_vao(GL, program);
+    const global_axis_vao = get_axis_vao(GL, program, hex2rgb("#C33C54", 0.9), hex2rgb("#849324", 0.9), hex2rgb("#437F97", 0.9), 100);
+    const cube_axis_vao = get_axis_vao(GL, program, hex2rgb("#C33C54", 0.9), hex2rgb("#849324", 0.9), hex2rgb("#437F97", 0.9), 1);
+    const cube_vao = get_cube_vao(GL, program, hex2rgb("#C33C54", 1.3), hex2rgb("#849324", 1.3), hex2rgb("#437F97", 1.3));
 
     GL.enable(GL.DEPTH_TEST);
     GL.depthFunc(GL.LEQUAL);
@@ -29,6 +30,12 @@ async function main() {
 
     requestAnimationFrame(() => draw(program, global_axis_vao, cube_axis_vao, cube_vao));
 }
+
+function hex2rgb(hex, k=1.0) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return [k * parseInt(result[1], 16) / 255, k * parseInt(result[2], 16) / 255, k * parseInt(result[3], 16) / 255];
+}
+
 
 var LAST_FRAME_TIME = null;
 
@@ -74,7 +81,7 @@ function draw(program, global_axis_vao, cube_axis_vao, cube_vao) {
     let cube_model_matrix = ANIMATOR.animate(cube_scale, cube_translation, cube_rotation);
     let global_axis_model_matrix = get_model_matrix(global_axis_scale, global_axis_rotation, global_axis_translation);
 
-    GL.clearColor(0.8, 0.8, 0.9, 1.0);
+    GL.clearColor(...BACKGROUND_COLOR, 1.0);
     GL.clearDepth(1.0);
     GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 
