@@ -116,7 +116,7 @@ export function get_rotation_matrix(order, x, y, z) {
     }
     order = order.toLowerCase().split("")
     
-    return matmul_chain(matrices[order[0]], matrices[order[1]], matrices[order[2]]);
+    return matmul_chain(matrices[order[2]], matrices[order[1]], matrices[order[0]]);
 }
 
 export function get_model_matrix(scale, rotation, translation, rotation_order = "XYZ", transformation_order = "RST") {
