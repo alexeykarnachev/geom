@@ -161,8 +161,11 @@ function add_select(parent, config) {
 
     label.innerHTML = config.label + ": ";
     label.style.fontSize = SELECT_LABEL_FONT_SIZE;
+    label.style.display = "flex";
+    label.style.marginTop = "2.0%";
 
     select.style.fontSize = SELECT_FONT_SIZE;
+    select.style.marginLeft = "2.0%";
     for (let value of config.values) {
         let option = document.createElement("option");
         option.value = value;
