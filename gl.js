@@ -181,3 +181,45 @@ export function get_cube_vao(gl, program, x_color, y_color, z_color) {
 
     return vao
 }
+
+export function get_grid_vao(gl, program, color, n_lines, length) {
+    let xs = [-length / 2];
+    let zs = [-length / 2];
+    let data = [];
+    let step = length / (n_lines - 1);
+    for (let i = 0; i < n_lines - 1; ++i) {
+        let x = xs[xs.length - 1] + step;
+        let z = zs[zs.length - 1] + step;
+
+        data.push(...[x, 0, -length / 2]);
+        data.push(...color);
+        data.push(...[x, 0, length / 2]);
+        data.push(...color);
+
+        data.push(...[-length / 2, 0, z]);
+        data.push(...color);
+        data.push(...[length / 2, 0, z]);
+        data.push(...color);
+
+        xs.push(x);
+        zs.push(z);
+    }
+
+    data = new Float32Array(data);
+
+    const a_position = gl.getAttribLocation(program, "a_position");
+    const a_color = gl.getAttribLocation(program, "a_color");
+    const vao = gl.createVertexArray();
+
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+
+    gl.vertexAttribPointer(a_position, 3, gl.FLOAT, false, 24, 0);
+    gl.enableVertexAttribArray(a_position);
+
+    gl.vertexAttribPointer(a_color, 3, gl.FLOAT, false, 24, 12);
+    gl.enableVertexAttribArray(a_color);
+
+    return vao
+}

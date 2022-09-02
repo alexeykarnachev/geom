@@ -1,10 +1,12 @@
 import { norm, cross, negate, dot, scale, get_rotation_matrix, matvecmul} from "./linear_algebra.js";
 
+const INITIAL_VIEW_DIR = [0, -0.2, -1];
+const INITIAL_POSITION = [0, 1, 5];
 
 export class Camera {
     constructor() {
-        this.view_dir = [0, 0, -1];
-        this.position = [0, 0, 5];
+        this.view_dir = INITIAL_VIEW_DIR;
+        this.position = INITIAL_POSITION;
         this.x_angle = 0;
         this.y_angle = 0;
     }
@@ -47,7 +49,7 @@ export class Camera {
         this.y_angle += y_angle;
 
         let r = get_rotation_matrix("ZYX", this.x_angle, this.y_angle, 0);
-        let view_dir = matvecmul(r, [0, 0, -1, 0]);
+        let view_dir = matvecmul(r, INITIAL_VIEW_DIR.concat([0]));
         view_dir.pop();
         this.view_dir = view_dir;
     }
